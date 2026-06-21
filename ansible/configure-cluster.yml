@@ -1,0 +1,26 @@
+---
+- name: Configure Kubernetes Cluster
+  hosts: master
+  become: yes
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  tasks:
+    - name: Install Helm
+      shell: curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Add NGINX Ingress repository
+      command: helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+      
+    - name: Add Jetstack cert-manager repository
+      command: helm repo add jetstack https://charts.jetstack.io
+      
+    - name: Add CloudNativePG repository
+      command: helm repo add cnpg https://cloudnative-pg.github.io/charts
+      
+    - name: Update Helm repositories
+      command: helm repo update
+
+    - name: Install CloudNativePG Operator
+      command: helm upgrade --install cnpg cnpg/cloudnative-pg --namespace cnpg-system --create-namespace --wait

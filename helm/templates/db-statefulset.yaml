@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Release.Name }}-db-app-secret
+  labels:
+    app: db
+    release: {{ .Release.Name }}
+type: Opaque
+stringData:
+  username: {{ .Values.database.env.POSTGRES_USER | quote }}
+  password: {{ .Values.database.env.POSTGRES_PASSWORD | quote }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Release.Name }}-db
+  labels:
+    app: db
+    release: {{ .Release.Name }}
+spec:
+  inheritedMetadata:
+    labels:
+      app: db
+      release: {{ .Release.Name }}
+  instances: {{ .Values.database.replicaCount | default 3 }}
+  imageName: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+  primaryUpdateStrategy: unsupervised
+  bootstrap:
+    initdb:
+      database: {{ .Values.database.env.POSTGRES_DB | quote }}
+      owner: {{ .Values.database.env.POSTGRES_USER | quote }}
+      secret:
+        name: {{ .Release.Name }}-db-app-secret
+  storage:
+    size: {{ .Values.database.storageSize }}

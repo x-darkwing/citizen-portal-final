@@ -1,0 +1,6 @@
+{
+  "name": "DESC Citizen Portal",
+  "description": "Digital application portal for Mardan government services, certificates, and tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

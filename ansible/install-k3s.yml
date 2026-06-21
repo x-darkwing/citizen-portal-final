@@ -1,0 +1,33 @@
+---
+- name: Install K3s on Master Node
+  hosts: master
+  become: yes
+  tasks:
+    - name: Download and install K3s
+      shell: curl -sfL https://get.k3s.io | sh -
+      environment:
+        INSTALL_K3S_EXEC: "server --cluster-init"
+      args:
+        creates: /etc/rancher/k3s/k3s.yaml
+
+    - name: Wait for K3s to be ready
+      command: k3s kubectl get node
+      register: node_status
+      until: node_status.rc == 0
+      retries: 5
+      delay: 10
+
+    - name: Get K3s token
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token
+      
+    - name: Set token fact
+      set_fact:
+        k3s_cluster_token: "{{ k3s_token.content | b64decode | trim }}"
+
+    - name: Fetch kubeconfig locally
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: ~/.kube/config
+        flat: yes
