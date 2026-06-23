@@ -1,32 +1,62 @@
-apiVersion: v1
-kind: Secret
-metadata:
-  name: db-app-secret
-  namespace: citizen-portal
-type: Opaque
-stringData:
-  username: "db_user"
-  password: "<POSTGRES_PASSWORD_PLACEHOLDER>"
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: db
   namespace: citizen-portal
-  labels:
-    app: db
 spec:
-  inheritedMetadata:
-    labels:
+  serviceName: db
+  replicas: 1
+  selector:
+    matchLabels:
       app: db
-  instances: 3
-  imageName: ghcr.io/cloudnative-pg/postgresql:15.8
-  primaryUpdateStrategy: unsupervised
-  bootstrap:
-    initdb:
-      database: citizen_portal
-      owner: db_user
-      secret:
-        name: db-app-secret
-  storage:
-    size: 5Gi
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_DB
+          value: citizen_portal
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: citizen-portal-secret
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - name: pgdata
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+  volumeClaimTemplates:
+  - metadata:
+      name: pgdata
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: citizen-portal
+spec:
+  selector:
+    app: db
+  ports:
+  - port: 5432
+    targetPort: 5432
+  clusterIP: None

@@ -4,7 +4,7 @@ metadata:
   name: frontend
   namespace: citizen-portal
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: frontend
@@ -13,24 +13,12 @@ spec:
       labels:
         app: frontend
     spec:
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - frontend
-              topologyKey: kubernetes.io/hostname
       serviceAccountName: frontend-sa
       automountServiceAccountToken: false
       containers:
       - name: frontend
         image: citizen-portal-frontend:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Never
         ports:
         - containerPort: 8080
         envFrom:
@@ -38,20 +26,20 @@ spec:
             name: citizen-portal-config
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
+            memory: "64Mi"
+            cpu: "50m"
           limits:
             memory: "256Mi"
-            cpu: "250m"
+            cpu: "150m"
         livenessProbe:
           httpGet:
             path: /
             port: 8080
-          initialDelaySeconds: 10
+          initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /
             port: 8080
-          initialDelaySeconds: 5
+          initialDelaySeconds: 15
           periodSeconds: 5
