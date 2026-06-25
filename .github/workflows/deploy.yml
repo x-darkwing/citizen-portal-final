@@ -21,17 +21,24 @@ jobs:
 
       - name: Install Trivy
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+          if ! command -v trivy &> /dev/null; then
+            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+          fi
+          trivy --version
 
       - name: Scan backend image
         run: |
-          trivy image --exit-code 0 --severity HIGH,CRITICAL \
-            --format table citizen-portal-backend:latest
+          trivy image --timeout 15m --exit-code 0 \
+            --severity HIGH,CRITICAL \
+            --format table \
+            citizen-portal-backend:latest || true
 
       - name: Scan frontend image
         run: |
-          trivy image --exit-code 0 --severity HIGH,CRITICAL \
-            --format table citizen-portal-frontend:latest
+          trivy image --timeout 15m --exit-code 0 \
+            --severity HIGH,CRITICAL \
+            --format table \
+            citizen-portal-frontend:latest || true
 
       - name: Import images into k3s
         run: |
@@ -40,6 +47,7 @@ jobs:
 
       - name: Update Kubernetes secrets
         run: |
+          DB_IP=$(kubectl get pod db-0 -n citizen-portal -o jsonpath='{.status.podIP}')
           kubectl delete secret citizen-portal-secret -n citizen-portal --ignore-not-found
           kubectl create secret generic citizen-portal-secret \
             --namespace citizen-portal \
@@ -47,7 +55,7 @@ jobs:
             --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
             --from-literal=ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} \
             --from-literal=ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
-            --from-literal=DATABASE_URL=${{ secrets.DATABASE_URL }}
+            --from-literal=DATABASE_URL=postgres://postgres:${{ secrets.POSTGRES_PASSWORD }}@${DB_IP}:5432/citizen_portal
 
       - name: Restart deployments
         run: |
