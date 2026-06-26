@@ -1,0 +1,14 @@
+apiVersion: v2
+name: citizen-portal
+description: DESC Citizen Portal - Digital Services for Mardan
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - citizen
+  - portal
+  - government
+  - services
+maintainers:
+  - name: darkwing
+    email: admin@example.com

@@ -1,0 +1,48 @@
+namespace: citizen-portal
+
+backend:
+  image: citizen-portal-backend:latest
+  imagePullPolicy: Never
+  replicas: 1
+  port: 5000
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+
+frontend:
+  image: citizen-portal-frontend:latest
+  imagePullPolicy: Never
+  replicas: 1
+  port: 8080
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 150m
+      memory: 256Mi
+
+db:
+  image: postgres:15-alpine
+  storage: 1Gi
+  name: citizen_portal
+  user: postgres
+
+redis:
+  image: redis:7-alpine
+  storage: 1Gi
+
+secret:
+  jwtSecret: mysecretkey123
+  postgresPassword: postgres123
+  adminEmail: admin@example.com
+  adminPassword: admin123
+
+ingress:
+  enabled: true
+  host: citizen-portal.local
+  tlsSecret: citizen-portal-tls
